@@ -1,193 +1,115 @@
-# param (
-#     [string]$LicenseFile = "licenses.txt",
-#     [string]$OutdatedFile = "outdated-dependencies.txt",
-#     [string]$DependencyFile = "dependency.txt"
-# )
-
-# # Function to read installed packages and their versions from dependency.txt
-# function Get-InstalledPackages {
-#     $installedPackages = @{}
-#     $dependencyLines = Get-Content -Path $DependencyFile
-#     foreach ($line in $dependencyLines) {
-#         $line = $line.Trim()
-#         if ($line -match '^(?<name>\S+)\s+(?<version>\S+)$') {
-#             $installedPackages[$matches.name] = $matches.version
-#         }
-#     }
-#     return $installedPackages
-# }
-
-# # Function to read latest versions of packages from outdated-dependencies.txt
-# function Get-LatestVersions {
-#     $latestVersions = @{}
-#     $outdatedLines = Get-Content -Path $OutdatedFile
-#     foreach ($line in $outdatedLines) {
-#         $line = $line.Trim()
-#         if ($line -match '^(?<name>\S+)\s+(?<version>\S+)\s+(?<latest_version>\S+)\s+\S*$' -and $line -notmatch '^(Package|------|=+|\s*$)') {
-#             $latestVersions[$matches.name] = $matches.latest_version
-#         }
-#     }
-#     return $latestVersions
-# }
-
-# # Function to read license information from licenses.txt
-# function Get-Licenses {
-#     $licenses = @{}
-#     $licenseLines = Get-Content -Path $LicenseFile
-#     foreach ($line in $licenseLines) {
-#         $line = $line.Trim()
-#         if ($line -match '^\|\s*(?<name>[^\|]+?)\s*\|\s*(?<version>[^\|]+?)\s*\|\s*(?<license>[^\|]+?)\s*\|\s*(?<url>[^\|]+?)\s*\|.*$') {
-#             $licenses[$matches.name.Trim()] = @{
-#                 License = $matches.license.Trim();
-#                 URL = $matches.url.Trim()
-#             }
-#         }
-#     }
-#     return $licenses
-# }
-
-# # Main script
-# $installedPackages = Get-InstalledPackages
-# $latestVersions = Get-LatestVersions
-# $licenses = Get-Licenses
-
-# # Output file for combined data
-# $outputFile = "sbom-result.txt"
-
-# # Write header to the output file
-# $tableHeader = "Package Name".PadRight(30) + "Installed Version".PadRight(20) + "Latest Version".PadRight(20) + "License".PadRight(40) + "URL"
-# $tableSeparator = "=" * $tableHeader.Length
-
-# # Clear output file if it exists
-# if (Test-Path $outputFile) {
-#     Clear-Content -Path $outputFile
-# }
-
-# Add-Content -Path $outputFile -Value $tableHeader
-# Add-Content -Path $outputFile -Value $tableSeparator
-
-# # Write package information to the output file
-# foreach ($packageName in $installedPackages.Keys) {
-#     $installedVersion = $installedPackages[$packageName]
-#     $latestVersion = $installedVersion
-#     if ($latestVersions.ContainsKey($packageName)) {
-#         $latestVersion = $latestVersions[$packageName]
-#     }
-#     $packageLicense = "License information not found"
-#     $packageURL = "URL not found"
-#     if ($licenses.ContainsKey($packageName)) {
-#         $packageLicense = $licenses[$packageName].License
-#         $packageURL = $licenses[$packageName].URL
-#     }
-
-#     # Ensure that only valid package names are processed
-#     if ($packageName -match '^\S+$' -and $packageName -notmatch '^(Package|------|=+|\s*$)') {
-#         $tableRow = $packageName.PadRight(30) + $installedVersion.PadRight(20) + $latestVersion.PadRight(20) + $packageLicense.PadRight(40) + $packageURL
-#         Write-Host "Writing row: $tableRow"  # Output each row to the console for debugging
-#         Add-Content -Path $outputFile -Value $tableRow
-#     } else {
-#         Write-Host "Skipping invalid package name: $packageName"  # Debug output for invalid package names
-#     }
-# }
-
-# Write-Host "Combined dependency information has been saved to $outputFile"
-param (
-    [string]$LicenseFile = "licenses.txt",
-    [string]$OutdatedFile = "outdated-dependencies.txt",
-    [string]$DependencyFile = "dependency.txt"
-)
-
-# Function to read installed packages and their versions from dependency.txt
-function Get-InstalledPackages {
-    $installedPackages = @{}
-    $dependencyLines = Get-Content -Path $DependencyFile
-    foreach ($line in $dependencyLines) {
-        $line = $line.Trim()
-        if ($line -match '^(?<name>\S+)\s+(?<version>\S+)$') {
-            $installedPackages[$matches.name] = $matches.version
-        }
-    }
-    return $installedPackages
-}
-
-# Function to read latest versions of packages from outdated-dependencies.txt
-function Get-LatestVersions {
-    $latestVersions = @{}
-    $outdatedLines = Get-Content -Path $OutdatedFile
-    foreach ($line in $outdatedLines) {
-        $line = $line.Trim()
-        if ($line -match '^(?<name>\S+)\s+(?<version>\S+)\s+(?<latest_version>\S+)\s+\S*$' -and $line -notmatch '^(Package|------|=+|\s*$)') {
-            $latestVersions[$matches.name] = $matches.latest_version
-        }
-    }
-    return $latestVersions
-}
-
-# Function to read license information from licenses.txt
-function Get-Licenses {
-    $licenses = @{}
-    $licenseLines = Get-Content -Path $LicenseFile
-    foreach ($line in $licenseLines) {
-        $line = $line.Trim()
-        if ($line -match '^\|\s*(?<name>[^\|]+?)\s*\|\s*(?<version>[^\|]+?)\s*\|\s*(?<license>[^\|]+?)\s*\|\s*(?<url>[^\|]+?)\s*\|.*$') {
-            $licenses[$matches.name.Trim()] = @{
-                License = $matches.license.Trim();
-                URL = $matches.url.Trim()
-            }
-        }
-    }
-    return $licenses
-}
-
-# Main script
-$installedPackages = Get-InstalledPackages
-$latestVersions = Get-LatestVersions
-$licenses = Get-Licenses
-
-# Output file for combined data
+# Input files
+$dependenciesFile = "formatted_dependencies.txt"
+$licensesFile = "licenses.txt"
 $outputFile = "sbom-result.txt"
 
-# Write header to the output file
-$tableHeader = "Package Name".PadRight(30) + "Installed Version".PadRight(20) + "Latest Version".PadRight(20) + "License".PadRight(40) + "URL"
-$tableSeparator = "=" * $tableHeader.Length
+# Column widths
+$dependencyWidth = 50
+$currentVersionWidth = 15
+$latestVersionWidth = 15
+$licenseWidth = 25
+$licenseUrlWidth = 60
 
-# Clear output file if it exists
-if (Test-Path $outputFile) {
-    Clear-Content -Path $outputFile
+# Output header with proper spacing
+$header = "{0}{1}{2}{3}{4}" -f `
+    "Dependency".PadRight($dependencyWidth), `
+    "Current Version".PadRight($currentVersionWidth), `
+    "Latest Version".PadRight($latestVersionWidth), `
+    "License".PadRight($licenseWidth), `
+    "License URL"
+
+$header | Out-File -FilePath $outputFile
+
+# Initialize the hash table for licenses
+$licenseInfo = @{}
+
+# Read licenses file into a hash table
+try {
+    Get-Content -Path $licensesFile | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -eq "") { return } # Skip empty lines
+
+        # Remove leading and trailing pipes and extra spaces
+        $line = $line.TrimStart('|').TrimEnd('|').Trim()
+
+        # Adjust the parsing based on the '|' delimiter
+        $parts = $line -split '\s*\|\s*'
+        if ($parts.Length -eq 4) {
+            $dependency = $parts[0].Trim()
+            $version = $parts[1].Trim()
+            $license = $parts[2].Trim()
+            $licenseUrl = $parts[3].Trim()
+
+            if (-not $licenseInfo.ContainsKey($dependency)) {
+                $licenseInfo[$dependency] = @{
+                    Version = $version
+                    License = $license
+                    LicenseUrl = $licenseUrl
+                }
+            } else {
+                Write-Output "Duplicate entry found for ${dependency} in ${licensesFile}."
+            }
+        } else {
+            Write-Output "Skipping invalid line in ${licensesFile}: ${line}"
+        }
+    }
+} catch {
+    Write-Error "Error reading ${licensesFile}: $_"
 }
 
-Add-Content -Path $outputFile -Value $tableHeader
-Add-Content -Path $outputFile -Value $tableSeparator
+# Read dependencies file and merge with license info
+try {
+    Get-Content -Path $dependenciesFile | ForEach-Object {
+        $line = $_.Trim()
+        if ($line -eq "") { return } # Skip empty lines
 
-# Write package information to the output file
-foreach ($packageName in $installedPackages.Keys) {
-    $installedVersion = $installedPackages[$packageName]
-    $latestVersion = $installedVersion
-    if ($latestVersions.ContainsKey($packageName)) {
-        $latestVersion = $latestVersions[$packageName]
-    }
-    
-    # Add ** if the installed version and latest version differ
-    if ($installedVersion -ne $latestVersion) {
-        $installedVersion += "**"
-        $latestVersion += "**"
-    }
+        # Adjust the parsing logic based on expected format
+        $fields = $line -split '\s+', 3
+        if ($fields.Length -ge 3) {
+            $depTrimmed = $fields[0].Trim()
+            $currentVersion = $fields[1].Trim()
+            $latestVersion = $fields[2].Trim()
 
-    $packageLicense = "License information not found"
-    $packageURL = "URL not found"
-    if ($licenses.ContainsKey($packageName)) {
-        $packageLicense = $licenses[$packageName].License
-        $packageURL = $licenses[$packageName].URL
+            if ($licenseInfo.ContainsKey($depTrimmed)) {
+                $licenseData = $licenseInfo[$depTrimmed]
+                $license = $licenseData.License
+                $licenseUrl = $licenseData.LicenseUrl
+                $outputLine = "{0}{1}{2}{3}{4}" -f `
+                    $depTrimmed.PadRight($dependencyWidth), `
+                    $currentVersion.PadRight($currentVersionWidth), `
+                    $latestVersion.PadRight($latestVersionWidth), `
+                    $license.PadRight($licenseWidth), `
+                    $licenseUrl
+                $outputLine | Out-File -FilePath $outputFile -Append
+                $licenseInfo.Remove($depTrimmed) # Remove matched entry
+            } else {
+                $outputLine = "{0}{1}{2}{3}{4}" -f `
+                    $depTrimmed.PadRight($dependencyWidth), `
+                    $currentVersion.PadRight($currentVersionWidth), `
+                    $latestVersion.PadRight($latestVersionWidth), `
+                    "N/A".PadRight($licenseWidth), `
+                    "N/A"
+                $outputLine | Out-File -FilePath $outputFile -Append
+            }
+        } else {
+            Write-Output "Skipping invalid line in ${dependenciesFile}: ${line}"
+        }
     }
-
-    # Ensure that only valid package names are processed
-    if ($packageName -match '^\S+$' -and $packageName -notmatch '^(Package|------|=+|\s*$)') {
-        $tableRow = $packageName.PadRight(30) + $installedVersion.PadRight(20) + $latestVersion.PadRight(20) + $packageLicense.PadRight(40) + $packageURL
-        Write-Host "Writing row: $tableRow"  # Output each row to the console for debugging
-        Add-Content -Path $outputFile -Value $tableRow
-    } else {
-        Write-Host "Skipping invalid package name: $packageName"  # Debug output for invalid package names
-    }
+} catch {
+    Write-Error "Error reading ${dependenciesFile}: $_"
 }
 
-Write-Host "Combined dependency information has been saved to $outputFile"
+# Add remaining entries from licenses file that were not matched
+foreach ($depTrimmed in $licenseInfo.Keys) {
+    $licenseData = $licenseInfo[$depTrimmed]
+    $licenseVersion = $licenseData.Version
+    $license = $licenseData.License
+    $licenseUrl = $licenseData.LicenseUrl
+    $outputLine = "{0}{1}{2}{3}{4}" -f `
+        $depTrimmed.PadRight($dependencyWidth), `
+        $licenseVersion.PadRight($currentVersionWidth), `
+        $licenseVersion.PadRight($latestVersionWidth), `
+        $license.PadRight($licenseWidth), `
+        $licenseUrl
+    $outputLine | Out-File -FilePath $outputFile -Append
+}
