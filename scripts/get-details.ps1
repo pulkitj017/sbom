@@ -1,22 +1,37 @@
-# Save current directory
-$currentDir = Get-Location
+# Define the path to the input and output files
+$inputFile = "outdated.txt"
+$outputFile = "formatted-outdated.txt"
 
-# Navigate to the directory where you want to save the output files
-# Uncomment and set the path if needed
-# Set-Location -Path "C:\Your\Desired\Path"
-pip3 install --upgrade pip
-pip install -r requirements.txt
-# Generate a list of installed dependencies
-pip list > dependency.txt
+# Read the content of the input file
+$content = Get-Content $inputFile
 
-# Generate a list of outdated dependencies
-pip list --outdated > outdated-dependencies.txt
+# Initialize an empty array to store formatted lines
+$formattedLines = @()
 
-# Upgrade pip-licenses
-pip install -U pip-licenses
+# Use a regex pattern to match and extract dependency lines
+$pattern = "^\[INFO\] \s+([^\s:]+):([^\s]+)\s+\.+\s+([^\s]+) -> ([^\s]+)$"
 
-# Generate the licenses report in markdown format
-pip-licenses --with-urls --with-system --format=markdown > licenses.txt
+foreach ($line in $content) {
+    if ($line -match $pattern) {
+        # Extract and format the dependency information
+        $dependencyFull = $matches[1] + ":" + $matches[2]
+        $currentVersion = $matches[3]
+        $latestVersion = $matches[4]
 
-# Navigate back to the original directory
-Set-Location -Path $currentDir
+        # Extract the base dependency name (after the colon)
+        $dependency = $dependencyFull -replace '^[^:]+:', ''
+
+        # Create a formatted line with spaces separating columns for better alignment
+        $formattedLine = "{0,-35} {1,-15} {2,-15}" -f $dependency, $currentVersion, $latestVersion
+        $formattedLines += $formattedLine
+    }
+}
+
+# Add header to the output with more spacing
+$header = "{0,-35} {1,-15} {2,-15}" -f "Dependency", "Current Version", "Latest Version"
+$formattedLines = $header, $formattedLines
+
+# Write the formatted lines to the output file
+$formattedLines | Out-File -FilePath $outputFile -Encoding UTF8
+
+Write-Host "Formatted content has been written to $outputFile"
